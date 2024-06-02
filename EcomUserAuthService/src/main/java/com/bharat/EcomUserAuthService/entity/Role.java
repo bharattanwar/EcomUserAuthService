@@ -1,13 +1,19 @@
 package com.bharat.EcomUserAuthService.entity;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.ManyToMany;
 import lombok.Getter;
 import lombok.Setter;
 
-@Entity(name = "Ecom_Role")
+import java.util.List;
+
 @Getter
 @Setter
-public class Role extends BaseModel{
-    private String role;
+@Entity(name = "ECOM_ROLE")
+public class Role extends BaseModel {
+    private String roleName;
     private String description;
+
+    @ManyToMany(mappedBy = "roles")
+    private List<User> users;
 }

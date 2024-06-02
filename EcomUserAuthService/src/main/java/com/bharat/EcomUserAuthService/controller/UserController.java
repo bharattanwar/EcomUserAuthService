@@ -3,6 +3,7 @@ package com.bharat.EcomUserAuthService.controller;
 import com.bharat.EcomUserAuthService.dto.LoginRequestDTO;
 import com.bharat.EcomUserAuthService.dto.SignupRequestDTO;
 import com.bharat.EcomUserAuthService.dto.UserResponseDTO;
+import com.bharat.EcomUserAuthService.exception.RoleNotFoundException;
 import com.bharat.EcomUserAuthService.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,19 +17,19 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<UserResponseDTO> Login(@RequestBody LoginRequestDTO loginRequestDTO){
-        return null;
+        return ResponseEntity.ok(userService.login(loginRequestDTO));
     }
     @GetMapping("/logout")
-    public ResponseEntity<UserResponseDTO> Logout(){
-        return null;
+    public ResponseEntity<Boolean> Logout(@RequestHeader("Authorisation") String authToken){
+        return ResponseEntity.ok(userService.logout(authToken));
     }
     @PostMapping("/signup")
-    public ResponseEntity<UserResponseDTO> Signup(@RequestBody SignupRequestDTO signupRequestDTO) {
-        return null;
+    public ResponseEntity<UserResponseDTO> signup(@RequestBody SignupRequestDTO signupRequestDTO) throws RoleNotFoundException {
+        return ResponseEntity.ok(userService.signup(signupRequestDTO));
     }
 
     @GetMapping("/validate")
-    public ResponseEntity validate(){
-        return null;
+    public ResponseEntity<Boolean> validate(@RequestHeader("Authorisation") String authToken){
+        return ResponseEntity.ok(userService.validateToken(authToken));
     }
-}
+} 
