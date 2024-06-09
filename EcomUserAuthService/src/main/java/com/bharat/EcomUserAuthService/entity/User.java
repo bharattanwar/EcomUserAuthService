@@ -6,11 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import java.util.List;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @Setter
-@Entity(name = "ECOM_USER")
+@Entity
 @AllArgsConstructor
 @NoArgsConstructor
 public class User extends BaseModel {
@@ -20,5 +22,5 @@ public class User extends BaseModel {
     private String token;
 
     @ManyToMany
-    private List<Role> roles;
+    private Set<Role> roleList = new HashSet<>();
 }

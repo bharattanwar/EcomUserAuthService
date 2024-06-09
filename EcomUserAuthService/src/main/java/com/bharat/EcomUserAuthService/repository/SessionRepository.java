@@ -1,6 +1,6 @@
 package com.bharat.EcomUserAuthService.repository;
 
-import com.bharat.EcomUserAuthService.entity.User;
+import com.bharat.EcomUserAuthService.entity.Session;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -8,7 +8,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, UUID> {
-    Optional<User> findByEmailId(String emailId);
-    Optional<User> findById(Long UserID);
+public interface SessionRepository extends JpaRepository<Session, UUID> {
+    Optional<Session> findByTokenAndUser_Id(String token, Long id);
 }
