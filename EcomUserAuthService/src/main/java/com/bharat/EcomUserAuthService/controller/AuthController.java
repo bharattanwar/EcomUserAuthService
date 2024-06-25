@@ -1,9 +1,7 @@
 package com.bharat.EcomUserAuthService.controller;
 
-import com.bharat.EcomUserAuthService.dto.SignupRequestDTO;
-import com.bharat.EcomUserAuthService.dto.ValidateRequestDTO;
-import com.bharat.EcomUserAuthService.dto.LoginRequestDTO;
-import com.bharat.EcomUserAuthService.dto.UserResponseDTO;
+import com.bharat.EcomUserAuthService.dto.*;
+import com.bharat.EcomUserAuthService.entity.SessionStatus;
 import com.bharat.EcomUserAuthService.entity.User;
 import com.bharat.EcomUserAuthService.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,49 +15,34 @@ import org.antlr.v4.runtime.misc.Pair;
 
 @RestController
 public class AuthController {
-    //Signup
-    //login
-    //ForgetPassword
-    //logout
     @Autowired
     private AuthService authService;
 
-    @PostMapping("/auth/signup")
-    public ResponseEntity<UserResponseDTO> signUp(@RequestBody SignupRequestDTO signupRequestDTO){
-        try{
-            User user=authService.signUp(signupRequestDTO.getEmail(),signupRequestDTO.getPassword());
-            UserResponseDTO userResponseDTO = getUserDTO(user);
-            return new ResponseEntity<UserResponseDTO>(userResponseDTO, HttpStatus.OK);
-        }catch(Exception e){
-            return new ResponseEntity<>(null,HttpStatus.BAD_REQUEST);
+    @PostMapping("/login")
+    public ResponseEntity<UserResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO) {
+        UserResponseDTO userDto = authService.login(loginRequestDTO.getEmail(), loginRequestDTO.getPassword());
+        if (userDto != null) {
+            return new ResponseEntity<>(userDto, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
     }
 
-    @PostMapping("auth/login")
-    public ResponseEntity<UserResponseDTO> login(@RequestBody LoginRequestDTO loginRequestDTO){
-        try {
-            Pair<User, MultiValueMap<String, String>> bodyWithHeaders = authService.login(loginRequestDTO.getEmail(), loginRequestDTO.getPassword());
-            UserResponseDTO userDTO = getUserDTO(bodyWithHeaders.a);
-            // bodyWithHeaders.getFirst() -> this will give us User
-            return new ResponseEntity<>(userDTO, bodyWithHeaders.b, HttpStatus.OK);
-            // bodyWithHeaders.getSecond() -> Headers
-        }catch (Exception e){
-            return new ResponseEntity<>(null,HttpStatus.BAD_REQUEST);
-        }
-
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestBody LogoutRequestDTO request) {
+        return authService.logout(request.getToken(), request.getUserId());
     }
 
-    @PostMapping("/auth/validate")
-    public ResponseEntity<Boolean>validate(@RequestBody ValidateRequestDTO validateRequestDTO){
-        Boolean isValid=authService.validate(validateRequestDTO.getToken(),validateRequestDTO.getUserId());
-        return new ResponseEntity<>(isValid,HttpStatus.OK);
+    @PostMapping("/signup")
+    public ResponseEntity<UserResponseDTO> signUp(@RequestBody SignupRequestDTO request) {
+        UserResponseDTO userDto = authService.signUp(request.getEmail(), request.getPassword());
+        return new ResponseEntity<>(userDto, HttpStatus.OK);
     }
 
-
-    public UserResponseDTO getUserDTO(User user){
-        UserResponseDTO userDTO=new UserResponseDTO();
-        userDTO.setEmail(user.getEmailId());
-        // userDTO.setRoles(user.getRoleList());
-        return userDTO;
+    @PostMapping("/validate")
+    public ResponseEntity<SessionStatus> validateToken(ValidateRequestDTO request) {
+        SessionStatus sessionStatus = authService.validate(request.getToken(), request.getUserId());
+        return new ResponseEntity<>(sessionStatus, HttpStatus.OK);
     }
+
 }

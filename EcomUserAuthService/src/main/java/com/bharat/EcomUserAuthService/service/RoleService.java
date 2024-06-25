@@ -1,9 +1,8 @@
 package com.bharat.EcomUserAuthService.service;
 
 import com.bharat.EcomUserAuthService.dto.RoleRequestDTO;
-import com.bharat.EcomUserAuthService.dto.RoleResponseDTO;
+import com.bharat.EcomUserAuthService.entity.Role;
 
 public interface RoleService {
-    RoleResponseDTO createRole(RoleRequestDTO roleRequestDTO);
-
+    Role createRole(RoleRequestDTO roleRequestDTO);
 }

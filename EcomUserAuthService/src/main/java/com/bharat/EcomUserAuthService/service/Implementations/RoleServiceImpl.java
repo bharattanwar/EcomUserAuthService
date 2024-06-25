@@ -1,23 +1,23 @@
-package com.bharat.EcomUserAuthService.service;
+package com.bharat.EcomUserAuthService.service.Implementations;
 
 import com.bharat.EcomUserAuthService.dto.RoleRequestDTO;
-import com.bharat.EcomUserAuthService.dto.RoleResponseDTO;
 import com.bharat.EcomUserAuthService.entity.Role;
 import com.bharat.EcomUserAuthService.repository.RoleRepository;
+import com.bharat.EcomUserAuthService.service.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class RoleServiceImpl implements  RoleService{
+public class RoleServiceImpl implements RoleService {
 
     @Autowired
     private RoleRepository roleRepository;
 
     @Override
-    public RoleResponseDTO createRole(RoleRequestDTO roleRequestDTO) {
+    public Role createRole(RoleRequestDTO roleRequestDTO) {
         Role role = new Role();
         role.setRoleName(roleRequestDTO.getRoleName());
         role.setDescription(roleRequestDTO.getDescription());
-        return RoleResponseDTO.from(roleRepository.save(role));
+        return roleRepository.save(role);
     }
 }
