@@ -16,11 +16,8 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class User extends BaseModel {
-    private String name;
-    private String emailId;
+    private String email;
     private String password;
-    private String token;
-
     @ManyToMany
-    private Set<Role> roleList = new HashSet<>();
+    private Set<Role> roles = new HashSet<>();
 }

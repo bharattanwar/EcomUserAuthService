@@ -3,12 +3,9 @@ package com.bharat.EcomUserAuthService.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.UUID;
-
 @Getter
 @Setter
-public class SignupRequestDTO {
-    private String name;
+public class SignupRequestDto {
     private String email;
     private String password;
 }

@@ -12,7 +12,7 @@ public class CustomGrantedAuthority implements GrantedAuthority {
     private String authority;
 
     public CustomGrantedAuthority(Role role) {
-        this.authority = role.getRoleName();
+        this.authority = role.getName();
     }
 
 

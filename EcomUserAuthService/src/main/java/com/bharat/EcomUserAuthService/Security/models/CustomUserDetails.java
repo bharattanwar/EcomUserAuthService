@@ -32,12 +32,12 @@ public class CustomUserDetails implements UserDetails {
 //        this.user = user;
             authorities = new ArrayList<>();
 
-            for (Role role: user.getRoleList()) {
+            for (Role role: user.getRoles()) {
                 authorities.add(new CustomGrantedAuthority(role));
             }
 
             this.password = user.getPassword();
-            this.username = user.getEmailId();
+            this.username = user.getEmail();
             this.accountNonExpired = true;
             this.accountNonLocked = true;
             this.credentialsNonExpired = true;

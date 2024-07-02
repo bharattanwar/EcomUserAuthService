@@ -10,6 +10,6 @@ import java.util.List;
 @Setter
 @Entity(name = "ECOM_ROLE")
 public class Role extends BaseModel {
-    private String roleName;
-    private String description;
+    private String name;
+
 }

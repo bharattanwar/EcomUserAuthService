@@ -2,7 +2,6 @@ package com.bharat.EcomUserAuthService.Security.services;
 
 import com.bharat.EcomUserAuthService.Security.models.AuthorizationConsent;
 import com.bharat.EcomUserAuthService.Security.repositories.AuthorizationConsentRepository;
-import io.jsonwebtoken.lang.Assert;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -11,6 +10,7 @@ import org.springframework.security.oauth2.server.authorization.OAuth2Authorizat
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.HashSet;
