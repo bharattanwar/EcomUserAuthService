@@ -1,140 +1,192 @@
 package com.bharat.EcomUserAuthService.service;
 
-import com.bharat.EcomUserAuthService.dto.UserDto;
-import com.bharat.EcomUserAuthService.entity.Role;
+import com.bharat.EcomUserAuthService.Client.KafkaProducerClient;
+import com.bharat.EcomUserAuthService.dto.SendMessageDTO;
+import com.bharat.EcomUserAuthService.dto.UserDTO;
 import com.bharat.EcomUserAuthService.entity.Session;
 import com.bharat.EcomUserAuthService.entity.SessionStatus;
 import com.bharat.EcomUserAuthService.entity.User;
-import com.bharat.EcomUserAuthService.exception.UserAlreadyExistsException;
-import com.bharat.EcomUserAuthService.exception.UserDoesNotExistException;
 import com.bharat.EcomUserAuthService.repository.SessionRepository;
 import com.bharat.EcomUserAuthService.repository.UserRepository;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.net.HttpHeaders;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtParser;
+import io.jsonwebtoken.Jwts;
+import org.antlr.v4.runtime.misc.Pair;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMapAdapter;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import javax.crypto.SecretKey;
-import java.time.LocalDate;
 import java.util.*;
 
 @Service
 public class AuthService {
-    private PasswordEncoder passwordEncoder;
+
+    @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    @Autowired
     private SessionRepository sessionRepository;
-//    private BCryptPasswordEncoder bCryptPasswordEncodersswordEncoder;
 
-    public AuthService(UserRepository userRepository, SessionRepository sessionRepository , PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.sessionRepository = sessionRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
+    @Autowired
+    private SecretKey secret;
 
-    public ResponseEntity<UserDto> login(String email, String password) throws UserDoesNotExistException {
-        Optional<User> userOptional = userRepository.findByEmail(email);
+    @Autowired
+    private KafkaProducerClient kafkaProducerClient;
 
-        if (userOptional.isEmpty()) {
-            throw new UserDoesNotExistException("User with email: " + email + " doesn't exist.");
+    @Autowired
+    private ObjectMapper objectMapper;
+    //for Serialization-Deserialization
+
+    public User signUp(String email, String password){
+        Optional<User> userOptional= userRepository.findByEmail(email);
+        if(userOptional.isEmpty()){//if the user is not there
+            //we should create User
+            User user=new User();
+            user.setEmail(email);
+            //user.setPassword(password);
+            //now storing the Encrypted Password in the DB
+            user.setPassword(bCryptPasswordEncoder.encode(password));
+            User savedUser=userRepository.save(user);
+            return savedUser;
         }
 
-        User user = userOptional.get();
 
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        UserDTO userDTO=new UserDTO();
+        userDTO.setEmail(email);
+
+        try {
+            SendMessageDTO sendMessageDTO=new SendMessageDTO();
+
+            sendMessageDTO.setTo(email);
+            sendMessageDTO.setFrom("admin@scaler.com");
+            sendMessageDTO.setSubject("Welcome : " +email);
+            sendMessageDTO.setBody("Sign up Successful in Application ");
+//put message in queue
+            kafkaProducerClient.sendMessage("sendEmail", objectMapper.writeValueAsString(sendMessageDTO));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
-
-//        RandomStringUtils randomStringUtils = new RandomStringUtils();
-        // TODO: Update here to use Jwt
-        // Payload:
-        // {
-        //    userId:
-        //    email:
-        //    roles: [
-        //    ]
-        // }
-        // Map<String, Object> claimsMap;
-        // claimsMap.add(userId, 123);
-
-
-        String token = RandomStringUtils.randomAscii(20);
-        MultiValueMapAdapter<String, String > headers = new MultiValueMapAdapter<>(new HashMap<>());
-        headers.add("AUTH_TOKEN", token);
-
-        Session session = new Session();
-        session.setSessionStatus(SessionStatus.ACTIVE);
-        session.setToken(token);
-        session.setUser(user);
-        sessionRepository.save(session);
-
-
-        UserDto userDto = UserDto.from(user);
-        ResponseEntity<UserDto> response = new ResponseEntity<>(
-                userDto,
-                headers,
-                HttpStatus.OK
-        );
-
-        return response;
+        return userOptional.get();//return the already present user
     }
 
-    public ResponseEntity<Void> logout(String token, Long userId) {
-        Optional<Session> sessionOptional = sessionRepository.findByTokenAndUser_Id(token, userId);
-
-        if (sessionOptional.isEmpty()) {
+    public Pair<User, MultiValueMap<String, String>> login(String email, String password){
+        Optional<User> userOptional=userRepository.findByEmail(email);
+        if(userOptional.isEmpty()){//if the user is not present (Checked by emailID)
             return null;
         }
 
-        Session session = sessionOptional.get();
+        User user=userOptional.get();
+       /* if(!user.getPassword().equals(password)){//user is present but the password NOT matches
+            return null;
+        }*/
 
-        session.setSessionStatus(SessionStatus.LOGGED_OUT);
+        //Matching the encrypted password and the password user has sent(Both encrypted)s
+        if(!bCryptPasswordEncoder.matches(password,user.getPassword()))
+            return null;
 
+        //Token Generation
+       /* String Message = "{\n" +
+                  "   \"email\": \"anurag@scaler.com\",\n" +
+                  "   \"roles\": [\n" +
+                  "      \"instructor\",\n" +
+                  "      \"buddy\"\n" +
+                  "   ],\n" +
+                  "   \"expirationDate\": \"2ndApril2024\"\n" +
+              "}";*/
+
+      /*  1. convert message to Byte Array
+        byte[]Content=Message.getBytes(StandardCharsets.UTF_8);
+
+        //Generation of token
+         String token= Jwts.builder().content(Content).compact();
+
+       // setting the cookie value to token
+         MultiValueMap<String,String>headers=new LinkedMultiValueMap();
+         headers.add(HttpHeaders.SET_COOKIE,token);
+         String token= Jwts.builder().content(Content).signWith(secret).compact();
+
+         return new Pair<User,MultiValueMap<String,String>>(user,headers);
+
+        //Adding the Signature in JWT token
+        //Bean named SecretKey is created in SpringSecurity Config file
+        MacAlgorithm macAlgorithm=Jwts.SIG.HS256;
+        SecretKey secret=macAlgorithm.key().build();
+         String token= Jwts.builder().claims(jwtData).signWith(secret).compact();
+        //signing token with the secret to avoid the Tampering with Token */
+
+
+        Map<String,Object>jwtData=new HashMap<>();
+        jwtData.put("email",user.getEmail());
+        jwtData.put("roles",user.getRoleList());
+        Long getTimeInMilis=System.currentTimeMillis();
+        jwtData.put("expiryTime",new Date(getTimeInMilis+10000000));
+        jwtData.put("createdAT",new Date(getTimeInMilis));
+
+        String token= Jwts.builder().claims(jwtData).signWith(secret).compact();
+        MultiValueMap<String,String>headers=new LinkedMultiValueMap();
+        headers.add(HttpHeaders.SET_COOKIE,token);//setting the cookie value to token
+
+        Session session=new Session();
+        session.setUser(user);
+        session.setToken(token);
+        session.setSessionStatus(SessionStatus.Active);
+        session.setExpiryAt(new Date(getTimeInMilis+10000));
         sessionRepository.save(session);
 
-        return ResponseEntity.ok().build();
+        return new Pair<User,MultiValueMap<String,String>>(user,headers);
+        //returning user along with token
     }
+    //step 5 -> Client will be coming to Resource Server ( token + Response from user)
+    public Boolean validate(String token,Long userId){
+        Optional<Session>optionalSession=sessionRepository.findByTokenAndUser_Id(token,userId);
 
-    public UserDto signUp(String email, String password) throws UserAlreadyExistsException {
-
-        Optional<User> userOptional = userRepository.findByEmail(email);
-
-        if (!userOptional.isEmpty()) {
-            throw new UserAlreadyExistsException("User with " + email + " already exists.");
+        if(optionalSession.isEmpty()){
+            System.out.println("No user or Token found");
+            return false;
         }
 
-        User user = new User();
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password));
+        Session session= optionalSession.get();//particular session returned
+        String tokens=session.getToken();
 
-        User savedUser = userRepository.save(user);
+        //parsing : processing / fetching the info.
+        JwtParser parser=Jwts.parser().verifyWith(secret).build();//fetching the secret
+        Claims claims=parser.parseSignedClaims(tokens).getPayload();//obtain the payload
+        System.out.println(claims);
 
-        return UserDto.from(savedUser);
-    }
+        Long nowInMillis=System.currentTimeMillis();
+        Long tokenExpiry=(Long)claims.get("expiryTime");
+        //in Map key for ExpiryTime: "expiryTime"
 
-    public Optional<UserDto> validate(String token, Long userId) {
-        Optional<Session> sessionOptional = sessionRepository.findByTokenAndUser_Id(token, userId);
-
-        if (sessionOptional.isEmpty()) {
-            return Optional.empty();
+        if(nowInMillis>tokenExpiry){
+            System.out.println("Token is Expired");
+            System.out.println("Time:"+nowInMillis);
+            System.out.println("expiryTime:"+ tokenExpiry);
+            return false;
         }
 
-        Session session = sessionOptional.get();
-
-        if (!session.getSessionStatus().equals(SessionStatus.ACTIVE)) {
-            return Optional.empty();
+        Optional<User>optionalUser=userRepository.findById(userId);
+        if(optionalUser.isEmpty()){
+            return false;
         }
 
-        User user = userRepository.findById(userId).get();
+        String email=optionalUser.get().getEmail();
+        if(!email.equals(claims.get("email"))) { //key for storing email: "email"
+            System.out.println(email);
+            System.out.println(claims.get("email"));
+            System.out.println("email Not Matching");
+            return false;
+        }
 
-        UserDto userDto = UserDto.from(user);
-
-//        if (!session.getExpiringAt() > new Date()) {
-//            return SessionStatus.EXPIRED;
-//        }
-
-        return Optional.of(userDto);
+        return true;
     }
 
 }

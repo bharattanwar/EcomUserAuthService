@@ -1,4 +1,3 @@
-/*
 package com.bharat.EcomUserAuthService.Client;
 
 import org.springframework.kafka.core.KafkaTemplate;
@@ -17,4 +16,3 @@ public class KafkaProducerClient {
         kafkaTemplate.send(topic,message);
     }
 }
-*/

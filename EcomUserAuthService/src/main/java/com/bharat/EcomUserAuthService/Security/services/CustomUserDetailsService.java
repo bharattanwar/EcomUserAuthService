@@ -3,6 +3,7 @@ package com.bharat.EcomUserAuthService.Security.services;
 import com.bharat.EcomUserAuthService.Security.models.CustomUserDetails;
 import com.bharat.EcomUserAuthService.entity.User;
 import com.bharat.EcomUserAuthService.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -12,22 +13,17 @@ import java.util.Optional;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
+
+    @Autowired
     private UserRepository userRepository;
 
-    public CustomUserDetailsService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-
-
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<User> user = userRepository.findByEmail(username);
-
-        if (user.isEmpty()) {
-            throw new UsernameNotFoundException(username + " doesn't exist.");
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if(optionalUser.isEmpty()){
+            throw new UsernameNotFoundException("user Not Found");
         }
-
-
-        return new CustomUserDetails(user.get());
+        User user=optionalUser.get();
+        return new CustomUserDetails(user);
     }
 }
