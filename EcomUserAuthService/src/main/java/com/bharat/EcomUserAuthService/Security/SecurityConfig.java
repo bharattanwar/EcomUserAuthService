@@ -77,9 +77,10 @@ public class SecurityConfig {
 //                    .formLogin(Customizer.withDefaults());
 //
 //            return http.build();
-        http.cors().disable();
-        http.csrf().disable();
-        http.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());
+        http.cors(cors -> cors.disable())
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll());
+
         return http.build();
     }
 

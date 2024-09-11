@@ -1,7 +1,6 @@
 package com.bharat.EcomUserAuthService.Security;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.MacAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,32 +11,27 @@ import javax.crypto.SecretKey;
 
 @Configuration
 public class SpringSecurity {
-        //SecurityFilterChain-> this is something which is getting Controlled & we need to override this
-        //we want that SpringBoot should take this bean Rather than Creating on its own
-        //overriding the properties
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-            httpSecurity.cors().disable();
-            httpSecurity.csrf().disable();
 
-            httpSecurity.authorizeHttpRequests(authorize->authorize.anyRequest().permitAll());
-            return httpSecurity.build();
-        }
-
-
-        //creating bean for BCryptPasswordEncoder
-        @Bean
-        public BCryptPasswordEncoder bCryptPasswordEncoder(){
-            return new BCryptPasswordEncoder();
-        }
-
-
-        @Bean
-        public SecretKey secret(){//we want a singleton object so we are creating a bean
-            MacAlgorithm macAlgorithm= Jwts.SIG.HS256;
-            SecretKey secret=macAlgorithm.key().build();
-            return secret;
-        }
-
+    // SecurityFilterChain configuration
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity.cors(cors -> cors.disable())   // Disabling CORS
+                .csrf(csrf -> csrf.disable())   // Disabling CSRF
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll()); // Allow all requests
+        return httpSecurity.build();
     }
 
+    // BCryptPasswordEncoder Bean
+    @Bean
+    public BCryptPasswordEncoder bCryptPasswordEncoder(){
+        return new BCryptPasswordEncoder();
+    }
+
+    // SecretKey Bean for JWT
+    @Bean
+    public SecretKey secretKey(){
+        // Generating a SecretKey using HS256 algorithm
+        return Keys.secretKeyFor(io.jsonwebtoken.SignatureAlgorithm.HS256);
+    }
+
+}
